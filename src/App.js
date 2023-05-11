@@ -1,17 +1,220 @@
-import { useQuery } from "@apollo/client";
-import React from "react";
-import { GET_MESSAGE } from "./graphql/message";
+import { useMutation, useQuery } from "@apollo/client";
+import React, { useState } from "react";
+import { GET_MESSAGE, SEND_MESSAGE } from "./graphql/message";
 
 const App = () => {
-  const { loading, error, data, refetch, networkStatus } = useQuery(
-    GET_MESSAGE,
-    {
-      variables: { roomName: "room1" },
-      notifyOnNetworkStatusChange: true,
+  const [name, setName] = useState("");
+  const [roomName, setRoomName] = useState("");
+  const [step, setStep] = useState(1);
+  const [messages, setMessages] = useState();
+  const [newMessage, setNewMessage] = useState("");
+  const getMessageQuery = useQuery(GET_MESSAGE, {
+    variables: { roomName },
+    notifyOnNetworkStatusChange: true,
+  });
+  const [sendMessage, sendMessageMutation] = useMutation(SEND_MESSAGE, {
+    variables: {
+      roomName,
+      message: newMessage,
+    },
+  });
+
+  const onChangeName = (event) => {
+    setName(event.target.value);
+  };
+
+  const onChangeRoomName = (event) => {
+    setRoomName(event.target.value);
+  };
+
+  const onCreateRoom = () => {
+    setMessages(getMessageQuery?.data?.messages);
+  };
+
+  const onChangeNewMessage = (event) => {
+    setNewMessage(event.target.value);
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter") {
+      // mutation sendMessage
+      sendMessage()
     }
+  };
+
+  return (
+    <div className="container-white">
+      {step === 1 && (
+        <>
+          <label className="title" style={{ margin: 16 }}>
+            ชื่อของคุณ
+          </label>
+          <input
+            type="text"
+            name="name"
+            className="input"
+            onChange={onChangeName}
+          />
+          {name.length > 0 && (
+            <button
+              className="button"
+              style={{ margin: 24 }}
+              onClick={() => {
+                setStep(2);
+              }}
+            >
+              <label className="textButton">ยืนยัน</label>
+            </button>
+          )}
+        </>
+      )}
+      {step === 2 && (
+        <>
+          <label className="title" style={{ margin: 80 }}>
+            คุณ {name}
+          </label>
+          <button
+            className="button"
+            style={{ marginTop: 24 }}
+            onClick={() => {
+              setStep(3);
+            }}
+          >
+            <label className="textButton">สร้างห้องใหม่</label>
+          </button>
+          <button
+            className="button"
+            style={{
+              marginBottom: 24,
+              backgroundColor: "#ffffff",
+              backgroundImage: null,
+            }}
+            onClick={() => {
+              setStep(4);
+            }}
+          >
+            <label className="textButton">เข้าร่วมแชท</label>
+          </button>
+        </>
+      )}
+      {(step === 3 || step === 4) && (
+        <>
+          <label className="title" style={{ margin: 16 }}>
+            {step === 3 ? "สร้างห้องใหม่" : "เข้าร่วมแชท"}
+          </label>
+          <input
+            type="text"
+            name="roomName"
+            className="input"
+            onChange={onChangeRoomName}
+          />
+          <div style={{ margin: 24 }}>
+            <button
+              // className="button"
+              style={{
+                height: 48,
+                width: 120,
+                backgroundColor: "#ffffff",
+                borderRadius: 10,
+                border: "none",
+              }}
+              onClick={() => {
+                setStep(2);
+              }}
+            >
+              <label className="textButton" style={{ color: "#383838" }}>
+                กลับ
+              </label>
+            </button>
+            <button
+              className="button"
+              style={{ width: 120 }}
+              onClick={() => {
+                onCreateRoom(roomName);
+                setStep(5);
+              }}
+            >
+              <label className="textButton">
+                {step === 3 ? "ยืนยัน" : "เข้าร่วม"}
+              </label>
+            </button>
+          </div>
+        </>
+      )}
+      {step === 5 && (
+        <>
+          <label className="title" style={{ margin: 16 }}>
+            ห้อง {roomName}
+          </label>
+          <div
+            style={{
+              backgroundColor: "#f4f4f4",
+              width: "95%",
+              height: "73%",
+              borderRadius: 10,
+              overflowY: "scroll",
+            }}
+          >
+            {messages?.map((message) => {
+              return (
+                <div
+                  key={message?.id}
+                  style={{
+                    alignSelf: "center",
+                    width: "fit-content",
+                    // height: "83%",
+                    borderRadius: 10,
+                    marginLeft: 12,
+                    marginBottom: 4,
+                  }}
+                >
+                  <label style={{ fontSize: 12, color: "#383838" }}>
+                    คุณ eiei
+                  </label>
+                  <div
+                    style={{
+                      backgroundColor: "#eee",
+                      width: "fit-content",
+                      padding: 4,
+                      marginLeft: 12,
+                    }}
+                  >
+                    <label>{message?.body}</label>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div
+            style={{
+              backgroundColor: "#f4f4f4",
+              width: "95%",
+              // height: "3%",
+              borderRadius: 10,
+            }}
+          >
+            <input
+              type="text"
+              name="newMessage"
+              className="input"
+              style={{
+                width: "100%",
+                height: 40,
+                fontSize: 20,
+                textAlign: "start",
+                padding: 4,
+              }}
+              onKeyDown={handleKeyDown}
+              onChange={onChangeNewMessage}
+            />
+            <label style={{ float: "right", fontSize: 12, color: "#383838" }}>
+              Enter เพื่อส่ง
+            </label>
+          </div>
+        </>
+      )}
+    </div>
   );
-  console.log(data)
-  return <div className="app">Good Luck</div>;
 };
 
 export default App;

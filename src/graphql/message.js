@@ -11,11 +11,9 @@ export const GET_MESSAGE = gql`
 `;
 
 export const SEND_MESSAGE = gql`
-  query SendMessage($roomName: String!, $message: String!) {
+  mutation SendMessage($roomName: String!, $message: String!) {
     sendMessage(roomName: $roomName, message: $message) {
-      id
-      body
-      image
+      successful
     }
   }
 `;
