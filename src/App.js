@@ -1,6 +1,7 @@
-import { useMutation, useQuery } from "@apollo/client";
+import { useLazyQuery, useMutation, useQuery } from "@apollo/client";
 import React, { useState } from "react";
 import { GET_MESSAGE, SEND_MESSAGE } from "./graphql/message";
+import { CREATE_ROOM } from "./graphql/room";
 
 const App = () => {
   const [name, setName] = useState("");
@@ -8,14 +9,22 @@ const App = () => {
   const [step, setStep] = useState(1);
   const [messages, setMessages] = useState();
   const [newMessage, setNewMessage] = useState("");
-  const getMessageQuery = useQuery(GET_MESSAGE, {
+  const [getMessage, getMessageQuery] = useLazyQuery(GET_MESSAGE, {
     variables: { roomName },
     notifyOnNetworkStatusChange: true,
+    fetchPolicy: "network-only",
   });
   const [sendMessage, sendMessageMutation] = useMutation(SEND_MESSAGE, {
     variables: {
       roomName,
       message: newMessage,
+      senderName: name,
+    },
+    fetchPolicy: "network-only",
+  });
+  const [createRoom, createRoomMutation] = useMutation(CREATE_ROOM, {
+    variables: {
+      roomName,
     },
   });
 
@@ -28,7 +37,23 @@ const App = () => {
   };
 
   const onCreateRoom = () => {
-    setMessages(getMessageQuery?.data?.messages);
+    createRoom().then((res) => {
+      if (res.data.createRoom.successful) {
+        setStep(5);
+      } else {
+        console.log("dup");
+      }
+    });
+  };
+
+  const onJoinRoom = () => {
+    getMessage()
+      .then((res) => setMessages(res.data.messages))
+      .then(() => setStep(5))
+      .then(() => {
+        var elem = document.getElementById("chat");
+        elem.scrollTop = elem.scrollHeight;
+      });
   };
 
   const onChangeNewMessage = (event) => {
@@ -36,9 +61,16 @@ const App = () => {
   };
 
   const handleKeyDown = (event) => {
-    if (event.key === "Enter") {
-      // mutation sendMessage
-      sendMessage()
+    if (event.key === "Enter" && newMessage.length > 0) {
+      sendMessage().then(() => {
+        getMessage()
+          .then((res) => setMessages(res.data.messages))
+          .then(() => {
+            setNewMessage("");
+            var elem = document.getElementById("chat");
+            elem.scrollTop = elem.scrollHeight;
+          });
+      });
     }
   };
 
@@ -129,10 +161,9 @@ const App = () => {
             <button
               className="button"
               style={{ width: 120 }}
-              onClick={() => {
-                onCreateRoom(roomName);
-                setStep(5);
-              }}
+              onClick={() =>
+                step === 3 ? onCreateRoom(roomName) : onJoinRoom()
+              }
             >
               <label className="textButton">
                 {step === 3 ? "ยืนยัน" : "เข้าร่วม"}
@@ -147,6 +178,7 @@ const App = () => {
             ห้อง {roomName}
           </label>
           <div
+            id="chat"
             style={{
               backgroundColor: "#f4f4f4",
               width: "95%",
@@ -169,7 +201,7 @@ const App = () => {
                   }}
                 >
                   <label style={{ fontSize: 12, color: "#383838" }}>
-                    คุณ eiei
+                    คุณ {message?.from?.name}
                   </label>
                   <div
                     style={{
@@ -204,6 +236,7 @@ const App = () => {
                 textAlign: "start",
                 padding: 4,
               }}
+              value={newMessage}
               onKeyDown={handleKeyDown}
               onChange={onChangeNewMessage}
             />

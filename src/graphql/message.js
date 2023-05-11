@@ -5,14 +5,27 @@ export const GET_MESSAGE = gql`
     messages(roomName: $roomName) {
       id
       body
-      image
+      roomName
+      createAt
+      from {
+        name
+      }
+      # image
     }
   }
 `;
 
 export const SEND_MESSAGE = gql`
-  mutation SendMessage($roomName: String!, $message: String!) {
-    sendMessage(roomName: $roomName, message: $message) {
+  mutation SendMessage(
+    $roomName: String!
+    $message: String!
+    $senderName: String!
+  ) {
+    sendMessage(
+      roomName: $roomName
+      message: $message
+      senderName: $senderName
+    ) {
       successful
     }
   }
