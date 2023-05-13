@@ -1,15 +1,21 @@
-import { useLazyQuery, useMutation, useQuery } from "@apollo/client";
-import React, { useState } from "react";
-import { GET_MESSAGE, SEND_MESSAGE } from "./graphql/message";
-import { CREATE_ROOM } from "./graphql/room";
+import {
+  useLazyQuery,
+  useMutation,
+  useQuery,
+  useSubscription,
+} from "@apollo/client";
+import React, { useEffect, useState } from "react";
+import { GET_MESSAGE, NEW_MESSAGE, SEND_MESSAGE } from "./graphql/message";
+import { CREATE_ROOM, JOIN_ROOM } from "./graphql/room";
 
 const App = () => {
-  const [name, setName] = useState("");
-  const [roomName, setRoomName] = useState("");
-  const [step, setStep] = useState(1);
+  const [name, setName] = useState("Tan");
+  const [roomName, setRoomName] = useState("FF");
+  const [step, setStep] = useState(5);
   const [messages, setMessages] = useState();
   const [newMessage, setNewMessage] = useState("");
   const [getMessage, getMessageQuery] = useLazyQuery(GET_MESSAGE, {
+    document: NEW_MESSAGE,
     variables: { roomName },
     notifyOnNetworkStatusChange: true,
     fetchPolicy: "network-only",
@@ -25,6 +31,19 @@ const App = () => {
   const [createRoom, createRoomMutation] = useMutation(CREATE_ROOM, {
     variables: {
       roomName,
+    },
+  });
+  const [joinRoom, joinRoomMutation] = useMutation(JOIN_ROOM, {
+    variables: {
+      roomName,
+    },
+  });
+  const newMessageSubscription = useSubscription(NEW_MESSAGE, {
+    variables: { roomName },
+    onData: (res) => {
+      setMessages(messages.concat([res.data.data.newMessage]));
+      var elem = document.getElementById("chat");
+      elem.scrollTop = elem.scrollHeight;
     },
   });
 
@@ -47,13 +66,19 @@ const App = () => {
   };
 
   const onJoinRoom = () => {
-    getMessage()
-      .then((res) => setMessages(res.data.messages))
-      .then(() => setStep(5))
-      .then(() => {
-        var elem = document.getElementById("chat");
-        elem.scrollTop = elem.scrollHeight;
-      });
+    createRoom().then((res) => {
+      if (res.data.createRoom.successful) {
+        setStep(5);
+      } else {
+        getMessage()
+          .then((res) => setMessages(res.data.messages))
+          .then(() => setStep(5))
+          .then(() => {
+            var elem = document.getElementById("chat");
+            elem.scrollTop = elem.scrollHeight;
+          });
+      }
+    });
   };
 
   const onChangeNewMessage = (event) => {
@@ -73,6 +98,14 @@ const App = () => {
       });
     }
   };
+
+  // useEffect(() => {
+  //   console.log(data);
+  // }, [data]);
+
+  useEffect(() => {
+    getMessage().then((res) => setMessages(res.data.messages));
+  }, []);
 
   return (
     <div className="container-white">
@@ -185,6 +218,9 @@ const App = () => {
               height: "73%",
               borderRadius: 10,
               overflowY: "scroll",
+              flexDirection: "row",
+              paddingTop: 12,
+              paddingBottom: 12,
             }}
           >
             {messages?.map((message) => {
@@ -193,25 +229,41 @@ const App = () => {
                   key={message?.id}
                   style={{
                     alignSelf: "center",
-                    width: "fit-content",
+                    // width: "",
                     // height: "83%",
                     borderRadius: 10,
-                    marginLeft: 12,
-                    marginBottom: 4,
+                    marginBottom: 8,
+                    flexDirection: "row",
+                    display: "flex",
+                    ...(message.from.name == name
+                      ? { justifyContent: "flex-end", marginRight: 12 }
+                      : {
+                          justifyContent: "flex-start",
+                          marginLeft: 12,
+                        }),
                   }}
                 >
-                  <label style={{ fontSize: 12, color: "#383838" }}>
-                    คุณ {message?.from?.name}
-                  </label>
-                  <div
-                    style={{
-                      backgroundColor: "#eee",
-                      width: "fit-content",
-                      padding: 4,
-                      marginLeft: 12,
-                    }}
-                  >
-                    <label>{message?.body}</label>
+                  <div style={{ justifyContent: "flex-end" }}>
+                    {message.from.name !== name && (
+                      <label style={{ fontSize: 12, color: "#383838" }}>
+                        คุณ {message?.from?.name}
+                      </label>
+                    )}
+
+                    <div
+                      style={{
+                        backgroundColor: "#eee",
+                        width: "fit-content",
+                        padding: 4,
+                        marginLeft: 12,
+                      }}
+                    >
+                      <label
+                        style={{ overflowX: "hidden", wordWrap: "break-word" }}
+                      >
+                        {message?.body}
+                      </label>
+                    </div>
                   </div>
                 </div>
               );

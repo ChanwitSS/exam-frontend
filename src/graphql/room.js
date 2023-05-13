@@ -7,3 +7,11 @@ export const CREATE_ROOM = gql`
     }
   }
 `;
+
+export const JOIN_ROOM = gql`
+  mutation JoinRoom($roomName: String!) {
+    joinRoom(roomName: $roomName) {
+      successful
+    }
+  }
+`;

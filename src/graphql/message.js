@@ -30,3 +30,17 @@ export const SEND_MESSAGE = gql`
     }
   }
 `;
+
+export const NEW_MESSAGE = gql`
+  subscription NewMessage($roomName: String!) {
+    newMessage(roomName: $roomName) {
+      id
+      body
+      roomName
+      createAt
+      from {
+        name
+      }
+    }
+  }
+`;
