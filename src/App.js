@@ -9,9 +9,9 @@ import { GET_MESSAGE, NEW_MESSAGE, SEND_MESSAGE } from "./graphql/message";
 import { CREATE_ROOM, JOIN_ROOM } from "./graphql/room";
 
 const App = () => {
-  const [name, setName] = useState("Tan");
-  const [roomName, setRoomName] = useState("FF");
-  const [step, setStep] = useState(5);
+  const [name, setName] = useState("");
+  const [roomName, setRoomName] = useState("");
+  const [step, setStep] = useState(1);
   const [messages, setMessages] = useState();
   const [newMessage, setNewMessage] = useState("");
   const [getMessage, getMessageQuery] = useLazyQuery(GET_MESSAGE, {
@@ -98,14 +98,6 @@ const App = () => {
       });
     }
   };
-
-  // useEffect(() => {
-  //   console.log(data);
-  // }, [data]);
-
-  useEffect(() => {
-    getMessage().then((res) => setMessages(res.data.messages));
-  }, []);
 
   return (
     <div className="container-white">
